@@ -1,5 +1,11 @@
 "use strict";
 
+/** User class for message.ly */
+
+const db = require("../db");
+const { UnauthorizedError } = require("../expressError");
+const bcrypt = require("bcrypt");
+
 /** User of the site. */
 
 class User {
@@ -9,16 +15,49 @@ class User {
    */
 
   static async register({ username, password, first_name, last_name, phone }) {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const result = await db.query(
+        `INSERT INTO users (username,
+                            password,
+                            first_name,
+                            last_name,
+                            phone,
+                            join_at)
+        VALUES
+          ($1, $2, $3, $4, $5, current_timestamp)
+        RETURNING username, password, first_name, last_name, phone`,
+          [username, hashedPassword, first_name, last_name, phone]);
+
+    return result.rows[0];
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
 
   static async authenticate(username, password) {
+    const result = await db.query(
+      `SELECT password FROM users WHERE username = $1`,
+      [username]);
+    const user = result.rows[0];
+
+    if(user) {
+      return await bcrypt.compare(password, user.password);
+    }
+    throw new UnauthorizedError("Invalid user/password");
   }
 
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) {
+    const updatedLogin = await db.query(
+        `UPDATE users
+        SET last_login_at = $1
+        WHERE username = $2
+        RETURNING last_login_at`,
+        [TIMESTAMPTZ, username]);
+
+    if (!updatedLogin) {
+      throw new UnauthorizedError("Invalid user");
+    }
   }
 
   /** All: basic info on all users:

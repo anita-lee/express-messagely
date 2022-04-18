@@ -9,7 +9,6 @@ const bcrypt = require("bcrypt");
 /** User of the site. */
 
 class User {
-
   /** Register new user. Returns
    *    {username, password, first_name, last_name, phone}
    */
@@ -17,7 +16,7 @@ class User {
   static async register({ username, password, first_name, last_name, phone }) {
     const hashedPassword = await bcrypt.hash(password, 12);
     const result = await db.query(
-        `INSERT INTO users (username,
+      `INSERT INTO users (username,
                             password,
                             first_name,
                             last_name,
@@ -26,7 +25,8 @@ class User {
         VALUES
           ($1, $2, $3, $4, $5, current_timestamp)
         RETURNING username, password, first_name, last_name, phone`,
-          [username, hashedPassword, first_name, last_name, phone]);
+      [username, hashedPassword, first_name, last_name, phone]
+    );
 
     return result.rows[0];
   }
@@ -36,10 +36,11 @@ class User {
   static async authenticate(username, password) {
     const result = await db.query(
       `SELECT password FROM users WHERE username = $1`,
-      [username]);
+      [username]
+    );
     const user = result.rows[0];
 
-    if(user) {
+    if (user) {
       return await bcrypt.compare(password, user.password);
     }
     throw new UnauthorizedError("Invalid user/password");
@@ -49,11 +50,12 @@ class User {
 
   static async updateLoginTimestamp(username) {
     const updatedLogin = await db.query(
-        `UPDATE users
-        SET last_login_at = $1
-        WHERE username = $2
+      `UPDATE users
+        SET last_login_at = current_timestamp
+        WHERE username = $1
         RETURNING last_login_at`,
-        [TIMESTAMPTZ, username]);
+      [username]
+    );
 
     if (!updatedLogin) {
       throw new UnauthorizedError("Invalid user");
@@ -64,6 +66,15 @@ class User {
    * [{username, first_name, last_name}, ...] */
 
   static async all() {
+    const users = await db.query(
+      `SELECT username,
+              first_name,
+              last_name
+      FROM users
+      `
+    );
+
+    return users.rows;
   }
 
   /** Get: get user by username
@@ -76,6 +87,22 @@ class User {
    *          last_login_at } */
 
   static async get(username) {
+    //TODO: finish this
+
+    const user = await db.query(
+      `SELECT username,
+              first_name,
+              last_name,
+              phone,
+              join_at,
+              last_login_at
+      FROM users
+      WHERE username = $1
+      `,
+      [username]
+    );
+
+    return user.rows[0];
   }
 
   /** Return messages from this user.
@@ -87,7 +114,29 @@ class User {
    */
 
   static async messagesFrom(username) {
+    const messageResults = await db.query(
+      `SELECT id,
+              body,
+              sent_at,
+              read_at,
+              to_username.username
+      FROM messages
+      JOIN users ON to_username = users.username
+      WHERE from_username = $1
+      `,
+      [username]
+    );
   }
+
+  // {
+  //   id: 1,
+  //   body: asdfasdf,
+  //   sent_at: ,
+  //   read_at: ,
+  //   to_user: [
+  //     {username, first_name, last_name, phone}
+  //   ]
+  // }
 
   /** Return messages to this user.
    *
@@ -97,9 +146,7 @@ class User {
    *   {id, first_name, last_name, phone}
    */
 
-  static async messagesTo(username) {
-  }
+  static async messagesTo(username) {}
 }
-
 
 module.exports = User;

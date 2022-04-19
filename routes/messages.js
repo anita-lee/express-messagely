@@ -1,5 +1,7 @@
 "use strict";
 
+const User = require("../models/user");
+
 const Router = require("express").Router;
 const router = new Router();
 
@@ -16,14 +18,12 @@ const router = new Router();
  *
  **/
 
-
 /** POST / - post message.
  *
  * {to_username, body} =>
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
  **/
-
 
 /** POST/:id/read - mark message as read:
  *
@@ -32,6 +32,5 @@ const router = new Router();
  * Makes sure that the only the intended recipient can mark as read.
  *
  **/
-
 
 module.exports = router;

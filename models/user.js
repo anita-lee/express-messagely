@@ -21,9 +21,10 @@ class User {
                             first_name,
                             last_name,
                             phone,
-                            join_at)
+                            join_at,
+                            last_login_at)
         VALUES
-          ($1, $2, $3, $4, $5, current_timestamp)
+          ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
         RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]
     );
@@ -119,24 +120,74 @@ class User {
               body,
               sent_at,
               read_at,
-              to_username.username
+              to_username AS to_user,
+              username,
+              first_name,
+              last_name,
+              phone
       FROM messages
       JOIN users ON to_username = users.username
       WHERE from_username = $1
       `,
       [username]
     );
+
+    const messages = messageResults.rows;
+
+    // ALTERNATIVE METHOD USING A MAP:
+    //
+    // let array = messages.map((message) => {
+    //   const msg = {
+    //     id: message.id,
+    //     body: message.body,
+    //     sent_at: message.sent_at,
+    //     read_at: message.read_at,
+    //   };
+
+    //   msg.to_user = {
+    //     username: message.username,
+    //     first_name: message.first_name,
+    //     last_name: message.last_name,
+    //     phone: message.phone,
+    //   };
+
+    //   return msg;
+    // });
+
+    let messagesFromUser = [];
+    for (let message of messages) {
+      const msg = {
+        id: message.id,
+        body: message.body,
+        sent_at: message.sent_at,
+        read_at: message.read_at,
+      };
+
+      msg.to_user = {
+        username: message.username,
+        first_name: message.first_name,
+        last_name: message.last_name,
+        phone: message.phone,
+      };
+
+      messagesFromUser.push(msg);
+    }
+
+    return messagesFromUser;
   }
 
-  // {
+  // let list = [{username: 'ASDFAS', first_name: 'ASDF', last_name: 'ASDFASF', phone: "22342"}];
+
+  // let obj = {
   //   id: 1,
-  //   body: asdfasdf,
-  //   sent_at: ,
-  //   read_at: ,
-  //   to_user: [
-  //     {username, first_name, last_name, phone}
-  //   ]
+  //   body: "asdfasdf",
+  //   sent_at: 'aSDFASD',
+  //   read_at: 'ASDFASDF'
   // }
+
+  // let obj2 = {id: obj.id, body: obj.body, sent_at: obj.sent_at, read_at: obj.read_at}
+
+  // obj2.to_user = list;
 
   /** Return messages to this user.
    *

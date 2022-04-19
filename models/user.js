@@ -5,6 +5,7 @@
 const db = require("../db");
 const { UnauthorizedError } = require("../expressError");
 const bcrypt = require("bcrypt");
+const { BCRYPT_WORK_FACTOR } = require("../config")
 
 /** User of the site. */
 
@@ -14,7 +15,7 @@ class User {
    */
 
   static async register({ username, password, first_name, last_name, phone }) {
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
     const result = await db.query(
       `INSERT INTO users (username,
                             password,
@@ -134,7 +135,27 @@ class User {
 
     const messages = messageResults.rows;
 
-    // ALTERNATIVE METHOD USING A MAP:
+    let messagesFromUser = [];
+    for (let message of messages) {
+      const msg = {
+        id: message.id,
+        body: message.body,
+        sent_at: message.sent_at,
+        read_at: message.read_at,
+      };
+
+      msg.to_user = {
+        username: message.username,
+        first_name: message.first_name,
+        last_name: message.last_name,
+        phone: message.phone,
+      };
+
+      messagesFromUser.push(msg);
+    }
+    return messagesFromUser;
+  }
+      // ALTERNATIVE METHOD USING A MAP:
     //
     // let array = messages.map((message) => {
     //   const msg = {
@@ -154,40 +175,7 @@ class User {
     //   return msg;
     // });
 
-    let messagesFromUser = [];
-    for (let message of messages) {
-      const msg = {
-        id: message.id,
-        body: message.body,
-        sent_at: message.sent_at,
-        read_at: message.read_at,
-      };
 
-      msg.to_user = {
-        username: message.username,
-        first_name: message.first_name,
-        last_name: message.last_name,
-        phone: message.phone,
-      };
-
-      messagesFromUser.push(msg);
-    }
-
-    return messagesFromUser;
-  }
-
-  // let list = [{username: 'ASDFAS', first_name: 'ASDF', last_name: 'ASDFASF', phone: "22342"}];
-
-  // let obj = {
-  //   id: 1,
-  //   body: "asdfasdf",
-  //   sent_at: 'aSDFASD',
-  //   read_at: 'ASDFASDF'
-  // }
-
-  // let obj2 = {id: obj.id, body: obj.body, sent_at: obj.sent_at, read_at: obj.read_at}
-
-  // obj2.to_user = list;
 
   /** Return messages to this user.
    *
@@ -197,7 +185,46 @@ class User {
    *   {id, first_name, last_name, phone}
    */
 
-  static async messagesTo(username) {}
+  static async messagesTo(username) {
+    const messageResults = await db.query(
+      `SELECT id,
+              body,
+              sent_at,
+              read_at,
+              from_username AS from_user,
+              username,
+              first_name,
+              last_name,
+              phone
+      FROM messages
+      JOIN users ON from_username = users.username
+      WHERE to_username = $1
+      `,
+      [username]
+    );
+
+    const messages = messageResults.rows;
+
+    let messagesToUser = [];
+    for (let message of messages) {
+      const msg = {
+        id: message.id,
+        body: message.body,
+        sent_at: message.sent_at,
+        read_at: message.read_at,
+      };
+
+      msg.from_user = {
+        username: message.username,
+        first_name: message.first_name,
+        last_name: message.last_name,
+        phone: message.phone,
+      };
+
+      messagesToUser.push(msg);
+    }
+    return messagesToUser;
+  }
 }
 
 module.exports = User;

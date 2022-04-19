@@ -5,7 +5,7 @@
 const db = require("../db");
 const { UnauthorizedError } = require("../expressError");
 const bcrypt = require("bcrypt");
-const { BCRYPT_WORK_FACTOR } = require("../config")
+const { BCRYPT_WORK_FACTOR } = require("../config");
 
 /** User of the site. */
 
@@ -89,8 +89,6 @@ class User {
    *          last_login_at } */
 
   static async get(username) {
-    //TODO: finish this
-
     const user = await db.query(
       `SELECT username,
               first_name,
@@ -155,27 +153,25 @@ class User {
     }
     return messagesFromUser;
   }
-      // ALTERNATIVE METHOD USING A MAP:
-    //
-    // let array = messages.map((message) => {
-    //   const msg = {
-    //     id: message.id,
-    //     body: message.body,
-    //     sent_at: message.sent_at,
-    //     read_at: message.read_at,
-    //   };
+  // ALTERNATIVE METHOD USING A MAP:
+  //
+  // let array = messages.map((message) => {
+  //   const msg = {
+  //     id: message.id,
+  //     body: message.body,
+  //     sent_at: message.sent_at,
+  //     read_at: message.read_at,
+  //   };
 
-    //   msg.to_user = {
-    //     username: message.username,
-    //     first_name: message.first_name,
-    //     last_name: message.last_name,
-    //     phone: message.phone,
-    //   };
+  //   msg.to_user = {
+  //     username: message.username,
+  //     first_name: message.first_name,
+  //     last_name: message.last_name,
+  //     phone: message.phone,
+  //   };
 
-    //   return msg;
-    // });
-
-
+  //   return msg;
+  // });
 
   /** Return messages to this user.
    *

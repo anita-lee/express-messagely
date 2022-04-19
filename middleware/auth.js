@@ -7,7 +7,6 @@ const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
 const { UnauthorizedError } = require("../expressError");
 
-
 /** Middleware: Authenticate user. */
 
 function authenticateJWT(req, res, next) {
@@ -40,8 +39,7 @@ function ensureLoggedIn(req, res, next) {
 
 function ensureCorrectUser(req, res, next) {
   try {
-    if (!res.locals.user ||
-        res.locals.user.username !== req.params.username) {
+    if (!res.locals.user || res.locals.user.username !== req.params.username) {
       throw new UnauthorizedError();
     } else {
       return next();
@@ -50,7 +48,6 @@ function ensureCorrectUser(req, res, next) {
     return next(err);
   }
 }
-
 
 module.exports = {
   authenticateJWT,
